@@ -1,0 +1,34 @@
+app:
+  name: note_app_server
+  host: localhost
+  port: :8081
+mysql:
+  #  url
+  dsn: "root:123@tcp(localhost:8077)/note_app_db?charset=utf8mb4&parseTime=True&loc=Local"
+  # 最大并发连接数
+  maxIdleConns: 10
+  # 最大同时打开的连接数
+  maxOpenConns: 100
+  # 最大生命周期
+  connMaxLifetime: 1h
+mongo:
+  host: localhost
+  port: 8088
+  username: root
+  password: 123
+kafka:
+  network: "tcp"
+  host: localhost
+  port: 9092
+  # 点赞&取消点赞
+  noteLikes:
+    topic: "note_likes"
+    partitions: 10
+  # 收藏&取消收藏
+  noteCollects:
+    topic: "note_collects"
+    partitions: 10
+  # 评论笔记
+  noteComments:
+    topic: "note_comments"
+    partitions: 10

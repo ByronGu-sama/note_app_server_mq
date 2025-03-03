@@ -10,22 +10,12 @@ import (
 	"note_app_server_mq/config/action"
 	"note_app_server_mq/model/mqMessageModel"
 	"note_app_server_mq/repository"
-	"sync"
 )
 
 func NoteListener() {
-	wg := sync.WaitGroup{}
-	wg.Add(2)
-	go func() {
-		defer wg.Done()
-		likeNote()
-	}()
-	go func() {
-		defer wg.Done()
-		collectNote()
-	}()
 	log.Printf("note mq listener has started")
-	wg.Wait()
+	likeNote()
+	collectNote()
 }
 
 // LikeNote 点赞&取消点赞帖子

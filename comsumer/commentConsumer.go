@@ -10,14 +10,25 @@ import (
 	"note_app_server_mq/config/action"
 	"note_app_server_mq/model/mqMessageModel"
 	"note_app_server_mq/repository"
+	"sync"
 )
 
 func CommentListener() {
-	log.Printf("comment mq listener has started")
-	likeComment()
-	delComment()
+	fmt.Println("comment MQ listener has started")
+	wg := sync.WaitGroup{}
+	wg.Add(2)
+	go func() {
+		defer wg.Done()
+		likeComment()
+	}()
+	go func() {
+		defer wg.Done()
+		delComment()
+	}()
+	wg.Wait()
 }
 
+// 删除评论
 func delComment() {
 	ctx := context.Background()
 	conn, err := kafka.DialLeader(ctx, config.AC.Kafka.Network, config.AC.Kafka.Host+":"+config.AC.Kafka.Port, config.AC.Kafka.NoteComments.Topic, 0)
@@ -50,6 +61,7 @@ func delComment() {
 	}
 }
 
+// 点赞评论
 func likeComment() {
 	ctx := context.Background()
 	conn, err := kafka.DialLeader(ctx, config.AC.Kafka.Network, config.AC.Kafka.Host+":"+config.AC.Kafka.Port, config.AC.Kafka.NoteComments.Topic, 0)

@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"context"
 	"errors"
 	"gorm.io/gorm"
 	"note_app_server_mq/global"
@@ -155,5 +156,26 @@ func CancelCollectNote(nid string, uid uint) error {
 	}
 
 	tx.Commit()
+	return nil
+}
+
+// DeleteNoteWithUid 删除笔记
+func DeleteNoteWithUid(nid string, uid uint) error {
+	result := global.Db.Where("nid = ? and uid = ?", nid, uid).Delete(&noteModel.Note{})
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return errors.New("无匹配字段")
+	}
+	return nil
+}
+
+// SaveNoteToES 转存笔记
+func SaveNoteToES(note *noteModel.ESNote) error {
+	_, err := global.ESClient.Create("notes", note.Nid).Request(note).Do(context.TODO())
+	if err != nil {
+		return err
+	}
 	return nil
 }

@@ -12,6 +12,10 @@ type AppConfig struct {
 		MaxOpenConns    int
 		ConnMaxLifetime string
 	}
+	Es struct {
+		Host string
+		Port string
+	}
 	Mongo struct {
 		Host     string
 		Port     string
@@ -34,5 +38,20 @@ type AppConfig struct {
 			Topic      string
 			Partitions int
 		}
+		SyncNotes struct {
+			Topic      string
+			Partitions int
+		}
+		DelNotes struct {
+			Topic      string
+			Partitions int
+		}
+	}
+	Oss struct {
+		AvatarBucket   string
+		NotePicsBucket string
+		StyleBucket    string
+		EndPoint       string
+		Region         string
 	}
 }

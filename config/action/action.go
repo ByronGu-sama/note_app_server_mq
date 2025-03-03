@@ -8,4 +8,6 @@ const (
 	DelNoteComment = "delNoteComment" // 删除笔记评论
 	LikeComment    = "likeComment"    // 点赞评论
 	DislikeComment = "dislikeComment" // 取消点赞评论
+	SyncNote       = "syncNote"       // 同步帖子
+	DelNote        = "delNote"        // 删除笔记
 )

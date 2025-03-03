@@ -11,6 +11,9 @@ mysql:
   maxOpenConns: 100
   # 最大生命周期
   connMaxLifetime: 1h
+es:
+  host: localhost
+  port: 9200
 mongo:
   host: localhost
   port: 8088
@@ -32,3 +35,17 @@ kafka:
   noteComments:
     topic: "note_comments"
     partitions: 10
+  # 同步笔记
+  syncNotes:
+    topic: "sync_notes"
+    partition: 10
+  # 删除笔记
+  delNotes:
+    topic: "del_notes"
+    partition: 10
+oss:
+  avatarBucket: "note-app-oss-avatar"
+  notePicsBucket: "note-app-oss-note-pics"
+  styleBucket: "note-app-oss-style"
+  endPoint: "oss-cn-shanghai.aliyuncs.com"
+  region: "cn-shanghai"

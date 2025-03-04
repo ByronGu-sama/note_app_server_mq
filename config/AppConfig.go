@@ -25,7 +25,7 @@ func InitAppConfig() {
 	var once sync.Once
 	var wg sync.WaitGroup
 	once.Do(func() {
-		wg.Add(3)
+		wg.Add(4)
 		go func() {
 			defer wg.Done()
 			InitMysqlConfig()
@@ -37,6 +37,10 @@ func InitAppConfig() {
 		go func() {
 			defer wg.Done()
 			InitOssConfig()
+		}()
+		go func() {
+			defer wg.Done()
+			InitMongoDB()
 		}()
 	})
 	wg.Wait()

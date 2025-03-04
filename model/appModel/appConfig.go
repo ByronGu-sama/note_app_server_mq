@@ -46,6 +46,10 @@ type AppConfig struct {
 			Topic      string
 			Partitions int
 		}
+		SyncMessages struct {
+			Topic      string
+			Partitions int
+		}
 	}
 	Oss struct {
 		AvatarBucket   string

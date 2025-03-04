@@ -9,7 +9,7 @@ import (
 func main() {
 	config.InitAppConfig()
 	wg := sync.WaitGroup{}
-	wg.Add(2)
+	wg.Add(3)
 	go func() {
 		defer wg.Done()
 		comsumer.NoteListener()
@@ -17,6 +17,10 @@ func main() {
 	go func() {
 		defer wg.Done()
 		comsumer.CommentListener()
+	}()
+	go func() {
+		defer wg.Done()
+		comsumer.MessageListener()
 	}()
 	wg.Wait()
 	//test.TestKafka()

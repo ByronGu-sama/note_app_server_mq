@@ -83,6 +83,24 @@ func CancelLikeNote(nid string, uid uint) error {
 	return nil
 }
 
+// GetNoteLikes 查询点赞数
+func GetNoteLikes(nid string) (uint, error) {
+	noteInfo := noteModel.NoteInfo{}
+	if err := global.Db.Where("nid = ?", nid).First(&noteInfo).Error; err != nil {
+		return 0, err
+	}
+	return noteInfo.LikesCount, nil
+}
+
+// GetNoteCollections 查询收藏数
+func GetNoteCollections(nid string) (uint, error) {
+	noteInfo := noteModel.NoteInfo{}
+	if err := global.Db.Where("nid = ?", nid).First(&noteInfo).Error; err != nil {
+		return 0, err
+	}
+	return noteInfo.CollectionsCount, nil
+}
+
 // CollectNote 收藏
 func CollectNote(nid string, uid uint) error {
 	if err := global.Db.Model(&noteModel.CollectedNotes{}).Where("uid = ? and nid = ?", uid, nid).First(&noteModel.CollectedNotes{}).Error; err == nil {

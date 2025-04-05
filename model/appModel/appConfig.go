@@ -1,5 +1,7 @@
 package appModel
 
+import "time"
+
 type AppConfig struct {
 	App struct {
 		Name string
@@ -11,6 +13,22 @@ type AppConfig struct {
 		MaxIdleConns    int
 		MaxOpenConns    int
 		ConnMaxLifetime string
+	}
+	Redis struct {
+		ThumbsUpRdb           int
+		UserLikedNotesRdb     int
+		CollectedCntRdb       int
+		UserCollectedNotesRdb int
+		Host                  string
+		Port                  string
+		Password              string
+		Timeout               time.Duration
+		Pool                  struct {
+			MaxActive int
+			MaxIdle   int
+			MinIdle   int
+			MaxWait   time.Duration
+		}
 	}
 	Es struct {
 		Host string

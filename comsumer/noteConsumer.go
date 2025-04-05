@@ -12,7 +12,9 @@ import (
 	"note_app_server_mq/model/mqMessageModel"
 	"note_app_server_mq/repository"
 	"note_app_server_mq/service"
+	"strconv"
 	"sync"
+	"time"
 )
 
 func NoteListener() {
@@ -63,15 +65,19 @@ func likeNote() {
 		uid := msg.Uid
 		nid := msg.Nid
 		if msg.Action == action.LikeNote {
-			err = repository.LikeNote(nid, uid)
-			if err != nil {
-				log.Println("failed to like note:", err)
-			}
+			go func() {
+				ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+				defer cancel()
+				// 更新缓存中的点赞数，由程序定期将数据刷入mysql
+				service.IncrNoteThumbsUp(ctx, strconv.Itoa(int(uid)), nid)
+			}()
 		} else if msg.Action == action.DislikeNote {
-			err = repository.CancelLikeNote(nid, uid)
-			if err != nil {
-				log.Println("failed to dislike note:", err)
-			}
+			go func() {
+				ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+				defer cancel()
+				// 处理取消点赞帖子的逻辑
+				service.DecrNoteThumbsUp(ctx, strconv.Itoa(int(uid)), nid)
+			}()
 		}
 	}
 }
@@ -101,15 +107,17 @@ func collectNote() {
 		uid := msg.Uid
 		nid := msg.Nid
 		if msg.Action == action.CollectNote {
-			err = repository.CollectNote(nid, uid)
-			if err != nil {
-				log.Println("failed to collect note:", err)
-			}
+			go func() {
+				ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+				defer cancel()
+				service.IncrNoteCollection(ctx, strconv.Itoa(int(uid)), nid)
+			}()
 		} else if msg.Action == action.AbandonNote {
-			err = repository.CancelCollectNote(nid, uid)
-			if err != nil {
-				log.Println("failed to Abandon note:", err)
-			}
+			go func() {
+				ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+				defer cancel()
+				service.DecrNoteCollection(ctx, strconv.Itoa(int(uid)), nid)
+			}()
 		}
 	}
 }

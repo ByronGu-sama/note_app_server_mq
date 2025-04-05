@@ -11,6 +11,33 @@ mysql:
   maxOpenConns: 100
   # 最大生命周期
   connMaxLifetime: 1h
+redis:
+  # 缓存笔记的点赞数
+  thumbsUpRdb: 5
+  # 缓存用户已点赞的笔记
+  userLikedNotesRdb: 6
+  # 缓存笔记的收藏数
+  collectedCntRdb: 7
+  # 缓存用户已收藏的笔记
+  userCollectedNotesRdb: 8
+  # redis服务器地址（默认为localhost）
+  host: localhost
+  # redis端口（默认为6379）
+  port: :8076
+  # redis访问密码（默认为空）
+  password:
+  # redis连接超时时间（单位毫秒）
+  timeout: 1500
+  # redis连接池配置
+  pool:
+    # 最大可用连接数（默认为8，负数表示无限）
+    maxActive: 30
+    # 最大空闲连接数（默认为8，负数表示无限）
+    maxIdle: 15
+    # 最小空闲连接数（默认为0，该值只有为正数才有用）
+    minIdle: 2
+    # 从连接池中获取连接最大等待时间（默认为-1，单位为毫秒，负数表示无限）
+    maxWait: 1500
 es:
   host: localhost
   port: 9200

@@ -46,9 +46,8 @@ func syncMessage() {
 
 		fmt.Println(msg)
 
-		mid := msg.Mid
 		if msg.Action == action.SyncMessage {
-			err = repository.SyncMessageToMongo(mid, msg.Message)
+			err = repository.SyncMessageToMongo(msg.FirstKey, msg.SecondKey, msg.Message)
 			if err != nil {
 				log.Println("failed to sync message:", err)
 			}

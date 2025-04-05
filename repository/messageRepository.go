@@ -8,14 +8,16 @@ import (
 )
 
 // SyncMessageToMongo 同步消息
-func SyncMessageToMongo(mid string, message *msgModel.Message) error {
+func SyncMessageToMongo(uid1, uid2 uint, message *msgModel.Message) error {
 	client := global.MongoClient
 	msg := bson.D{
-		{Key: "_id", Value: mid},
+		{Key: "uid1", Value: uid1},
+		{Key: "uid2", Value: uid2},
 		{Key: "fromId", Value: message.FromId},
+		{Key: "fromName", Value: message.FromName},
 		{Key: "toId", Value: message.ToId},
+		{Key: "toName", Value: message.ToName},
 		{Key: "fromAvatar", Value: message.FromAvatar},
-		{Key: "toId", Value: message.ToId},
 		{Key: "type", Value: message.Type},
 		{Key: "content", Value: message.Content},
 		{Key: "mediaType", Value: message.MediaType},

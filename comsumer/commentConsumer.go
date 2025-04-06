@@ -30,25 +30,30 @@ func CommentListener() {
 
 // 删除评论
 func delComment() {
-	ctx := context.Background()
-	conn, err := kafka.DialLeader(ctx, config.AC.Kafka.Network, config.AC.Kafka.Host+":"+config.AC.Kafka.Port, config.AC.Kafka.NoteComments.Topic, 0)
-	if err != nil {
-		log.Fatal("failed to dial leader:", err)
-	}
+	reader := kafka.NewReader(kafka.ReaderConfig{
+		Brokers:  []string{config.AC.Kafka.Host + ":" + config.AC.Kafka.Port},
+		GroupID:  "comment_del_group",
+		Topic:    config.AC.Kafka.NoteComments.Topic,
+		MaxBytes: 10e3,
+	})
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
 	for {
-		msg := mqMessageModel.DelNoteComment{}
-		message, err1 := conn.ReadMessage(10e3)
+		message, err1 := reader.ReadMessage(ctx)
+
 		if err1 != nil {
-			break
+			log.Fatal("failed to read message:", err1)
 		}
 
-		err = json.Unmarshal(message.Value, &msg)
+		msg := mqMessageModel.DelNoteComment{}
+		err := json.Unmarshal(message.Value, &msg)
 		if err != nil {
-			break
+			log.Fatal("failed to unmarshal message:", err)
 		}
 
-		fmt.Println(msg)
+		log.Println(fmt.Sprintf("Fetched New Msg:%v", msg))
 
 		uid := msg.Uid
 		cid := msg.Cid
@@ -63,25 +68,29 @@ func delComment() {
 
 // 点赞评论
 func likeComment() {
-	ctx := context.Background()
-	conn, err := kafka.DialLeader(ctx, config.AC.Kafka.Network, config.AC.Kafka.Host+":"+config.AC.Kafka.Port, config.AC.Kafka.NoteComments.Topic, 0)
-	if err != nil {
-		log.Fatal("failed to dial leader:", err)
-	}
+	reader := kafka.NewReader(kafka.ReaderConfig{
+		Brokers:  []string{config.AC.Kafka.Host + ":" + config.AC.Kafka.Port},
+		GroupID:  "comment_thumbsUp_group",
+		Topic:    config.AC.Kafka.NoteComments.Topic,
+		MaxBytes: 10e3,
+	})
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
 	for {
-		msg := mqMessageModel.LikeNoteComment{}
-		message, err1 := conn.ReadMessage(10e3)
+		message, err1 := reader.ReadMessage(ctx)
 		if err1 != nil {
-			break
+			log.Fatal("failed to read message:", err1)
 		}
 
-		err = json.Unmarshal(message.Value, &msg)
+		msg := mqMessageModel.LikeNoteComment{}
+		err := json.Unmarshal(message.Value, &msg)
 		if err != nil {
-			break
+			log.Fatal("failed to unmarshal message:", err)
 		}
 
-		fmt.Println(msg)
+		log.Println(fmt.Sprintf("Fetched New Msg:%v", msg))
 
 		uid := msg.Uid
 		cid := msg.Cid

@@ -42,33 +42,37 @@ func NoteListener() {
 
 // LikeNote 点赞&取消点赞笔记
 func likeNote() {
-	ctx := context.Background()
-	conn, err := kafka.DialLeader(ctx, config.AC.Kafka.Network, config.AC.Kafka.Host+":"+config.AC.Kafka.Port, config.AC.Kafka.NoteLikes.Topic, 0)
-	if err != nil {
-		log.Fatal("failed to dial leader:", err)
-	}
+	reader := kafka.NewReader(kafka.ReaderConfig{
+		Brokers:  []string{config.AC.Kafka.Host + ":" + config.AC.Kafka.Port},
+		GroupID:  "note_thumbsUp_group",
+		Topic:    config.AC.Kafka.NoteLikes.Topic,
+		MaxBytes: 10e3,
+	})
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
 	for {
 		msg := mqMessageModel.LikeNotes{}
-		message, err1 := conn.ReadMessage(10e3)
+		message, err1 := reader.ReadMessage(ctx)
 		if err1 != nil {
 			log.Fatal("failed to read message:", err1)
 		}
-
-		err = json.Unmarshal(message.Value, &msg)
+		err := json.Unmarshal(message.Value, &msg)
 		if err != nil {
 			log.Fatal("failed to unmarshal message:", err)
 		}
 
-		fmt.Println(msg)
+		log.Println(fmt.Sprintf("Fetched New Msg:%v", msg))
 
 		uid := msg.Uid
 		nid := msg.Nid
+
 		if msg.Action == action.LikeNote {
 			go func() {
 				ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 				defer cancel()
-				// 更新缓存中的点赞数，由程序定期将数据刷入mysql
+				// 更新缓存中的点赞数
 				service.IncrNoteThumbsUp(ctx, strconv.Itoa(int(uid)), nid)
 			}()
 		} else if msg.Action == action.DislikeNote {
@@ -84,25 +88,30 @@ func likeNote() {
 
 // 收藏&取消收藏笔记
 func collectNote() {
-	ctx := context.Background()
-	conn, err := kafka.DialLeader(ctx, config.AC.Kafka.Network, config.AC.Kafka.Host+":"+config.AC.Kafka.Port, config.AC.Kafka.NoteCollects.Topic, 0)
-	if err != nil {
-		log.Fatal("failed to dial leader:", err)
-	}
+	reader := kafka.NewReader(kafka.ReaderConfig{
+		Brokers:  []string{config.AC.Kafka.Host + ":" + config.AC.Kafka.Port},
+		GroupID:  "note_collection_group",
+		Topic:    config.AC.Kafka.NoteCollects.Topic,
+		MaxBytes: 10e3,
+	})
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
 	for {
-		msg := mqMessageModel.CollectNotes{}
-		message, err1 := conn.ReadMessage(10e3)
+		message, err1 := reader.ReadMessage(ctx)
+
 		if err1 != nil {
 			log.Println("failed to read message:", err1)
 		}
 
-		err = json.Unmarshal(message.Value, &msg)
+		msg := mqMessageModel.CollectNotes{}
+		err := json.Unmarshal(message.Value, &msg)
 		if err != nil {
 			log.Println("failed to unmarshal message:", err)
 		}
 
-		fmt.Println(msg)
+		log.Println(fmt.Sprintf("Fetched New Msg:%v", msg))
 
 		uid := msg.Uid
 		nid := msg.Nid
@@ -124,24 +133,29 @@ func collectNote() {
 
 // 同步笔记
 func syncNoteToES() {
-	ctx := context.Background()
-	conn, err := kafka.DialLeader(ctx, config.AC.Kafka.Network, config.AC.Kafka.Host+":"+config.AC.Kafka.Port, config.AC.Kafka.SyncNotes.Topic, 0)
-	if err != nil {
-		log.Fatal("failed to dial leader:", err)
-	}
+	reader := kafka.NewReader(kafka.ReaderConfig{
+		Brokers:  []string{config.AC.Kafka.Host + ":" + config.AC.Kafka.Port},
+		GroupID:  "note_sync_note_group",
+		Topic:    config.AC.Kafka.SyncNotes.Topic,
+		MaxBytes: 10e6,
+	})
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
 	for {
-		msg := mqMessageModel.SyncNoteMsg{}
-		message, err1 := conn.ReadMessage(10e4)
+		message, err1 := reader.ReadMessage(ctx)
 		if err1 != nil {
 			log.Println("failed to read message:", err1)
 		}
 
-		err = json.Unmarshal(message.Value, &msg)
+		msg := mqMessageModel.SyncNoteMsg{}
+		err := json.Unmarshal(message.Value, &msg)
 		if err != nil {
 			log.Println("failed to unmarshal message:", err)
 		}
-		fmt.Println(msg)
+
+		log.Println(fmt.Sprintf("Fetched New Msg:%v", msg))
 
 		if msg.Action == action.SyncNote {
 			err = repository.SaveNoteToES(msg.Note)
@@ -155,25 +169,29 @@ func syncNoteToES() {
 
 // 删除笔记
 func delNote() {
-	ctx := context.Background()
-	conn, err := kafka.DialLeader(ctx, config.AC.Kafka.Network, config.AC.Kafka.Host+":"+config.AC.Kafka.Port, config.AC.Kafka.DelNotes.Topic, 0)
-	if err != nil {
-		log.Fatal("failed to dial leader:", err)
-	}
+	reader := kafka.NewReader(kafka.ReaderConfig{
+		Brokers:  []string{config.AC.Kafka.Host + ":" + config.AC.Kafka.Port},
+		GroupID:  "note_del_group",
+		Topic:    config.AC.Kafka.DelNotes.Topic,
+		MaxBytes: 10e3,
+	})
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
 	for {
-		msg := mqMessageModel.DelNote{}
-		message, err1 := conn.ReadMessage(10e3)
+		message, err1 := reader.ReadMessage(ctx)
 		if err1 != nil {
 			log.Println("failed to read message:", err1)
 		}
 
-		err = json.Unmarshal(message.Value, &msg)
+		msg := mqMessageModel.DelNote{}
+		err := json.Unmarshal(message.Value, &msg)
 		if err != nil {
 			log.Println("failed to unmarshal message:", err)
 		}
 
-		fmt.Println(msg)
+		log.Println(fmt.Sprintf("Fetched New Msg:%v", msg))
 
 		uid := msg.Uid
 		nid := msg.Nid

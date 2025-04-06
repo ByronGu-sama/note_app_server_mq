@@ -189,6 +189,24 @@ func DeleteNoteWithUid(nid string, uid uint) error {
 	return nil
 }
 
+// LoadLikedNoteToRdb 将DB内的笔记点赞数据载入redis
+func LoadLikedNoteToRdb(uid uint) ([]noteModel.LikedNotes, error) {
+	var likedNoteList []noteModel.LikedNotes
+	if err := global.Db.Where("uid = ?", uid).Find(&likedNoteList).Error; err != nil {
+		return nil, err
+	}
+	return likedNoteList, nil
+}
+
+// LoadCollectedNoteToRdb 将DB内的笔记收藏数据载入redis
+func LoadCollectedNoteToRdb(uid uint) ([]noteModel.CollectedNotes, error) {
+	var collectedNoteList []noteModel.CollectedNotes
+	if err := global.Db.Where("uid = ?", uid).Find(&collectedNoteList).Error; err != nil {
+		return nil, err
+	}
+	return collectedNoteList, nil
+}
+
 // SaveNoteToES 转存笔记
 func SaveNoteToES(note *noteModel.ESNote) error {
 	_, err := global.ESClient.Create("notes", note.Nid).Request(note).Do(context.TODO())

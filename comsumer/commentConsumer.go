@@ -10,6 +10,8 @@ import (
 	"note_app_server_mq/config/action"
 	"note_app_server_mq/model/mqMessageModel"
 	"note_app_server_mq/repository"
+	"note_app_server_mq/service"
+	"note_app_server_mq/utils"
 	"sync"
 )
 
@@ -41,27 +43,30 @@ func delComment() {
 	defer cancel()
 
 	for {
+		msg := mqMessageModel.DelNoteComment{}
 		message, err1 := reader.ReadMessage(ctx)
-
 		if err1 != nil {
 			log.Fatal("failed to read message:", err1)
 		}
-
-		msg := mqMessageModel.DelNoteComment{}
 		err := json.Unmarshal(message.Value, &msg)
 		if err != nil {
 			log.Fatal("failed to unmarshal message:", err)
 		}
 
-		log.Println(fmt.Sprintf("Fetched New Msg:%v", msg))
-
 		uid := msg.Uid
 		cid := msg.Cid
-		if msg.Action == action.DelNoteComment {
-			err = repository.DeleteComment(uid, cid)
-			if err != nil {
-				log.Println("failed to like note:", err)
-			}
+
+		switch msg.Action {
+		case action.DelNoteComment:
+			log.Println(fmt.Sprintf("Fetched New Msg:%v", msg))
+			go func() {
+				utils.SafeGo(func() {
+					err = repository.DeleteComment(uid, cid)
+					if err != nil {
+						log.Println("failed to like note:", err)
+					}
+				})
+			}()
 		}
 	}
 }
@@ -79,31 +84,25 @@ func likeComment() {
 	defer cancel()
 
 	for {
+		msg := mqMessageModel.LikeNoteComment{}
 		message, err1 := reader.ReadMessage(ctx)
 		if err1 != nil {
 			log.Fatal("failed to read message:", err1)
 		}
-
-		msg := mqMessageModel.LikeNoteComment{}
 		err := json.Unmarshal(message.Value, &msg)
 		if err != nil {
 			log.Fatal("failed to unmarshal message:", err)
 		}
-
-		log.Println(fmt.Sprintf("Fetched New Msg:%v", msg))
-
 		uid := msg.Uid
 		cid := msg.Cid
-		if msg.Action == action.LikeComment {
-			err = repository.LikeComment(uid, cid)
-			if err != nil {
-				log.Println("failed to like note:", err)
-			}
-		} else if msg.Action == action.DislikeComment {
-			err = repository.DislikeComment(uid, cid)
-			if err != nil {
-				log.Println("failed to dislike note:", err)
-			}
+
+		switch msg.Action {
+		case action.LikeComment:
+			log.Println(fmt.Sprintf("Fetched New Msg:%v", msg))
+			service.IncrCommentThumbsUp(ctx, uid, cid)
+		case action.DislikeComment:
+			log.Println(fmt.Sprintf("Fetched New Msg:%v", msg))
+			service.DecrCommentThumbsUp(ctx, uid, cid)
 		}
 	}
 }

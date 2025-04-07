@@ -9,7 +9,7 @@ import (
 type LikeNoteComment struct {
 	Action    string
 	Cid       string
-	Uid       uint
+	Uid       int
 	Timestamp time.Time
 }
 

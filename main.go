@@ -23,5 +23,4 @@ func main() {
 		comsumer.MessageListener()
 	}()
 	wg.Wait()
-	//test.TestGreen()
 }

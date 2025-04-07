@@ -41,7 +41,7 @@ func IncrNoteThumbsUp(ctx context.Context, uid string, nid string) {
 	// 缓存中没有用户点赞过的笔记列表则从DB加载
 	if global.NoteNormalRdb.SCard(ctx, userLikedNote).Val() == 0 {
 		newUid, _ := strconv.Atoi(uid)
-		ans, _ := repository.LoadLikedNoteToRdb(uint(newUid))
+		ans, _ := repository.LoadLikedNoteToRdb(newUid)
 		for _, x := range ans {
 			_, err = global.NoteNormalRdb.SAdd(ctx, userLikedNote, x.Nid).Result()
 		}
@@ -66,9 +66,9 @@ func IncrNoteThumbsUp(ctx context.Context, uid string, nid string) {
 
 		// 后台协程将新增的数据异步写入DB
 		go func() {
-			err := repository.LikeNote(nid, uint(newUid))
+			err := repository.LikeNote(nid, newUid)
 			for _ = range 3 {
-				err = repository.LikeNote(nid, uint(newUid))
+				err = repository.LikeNote(nid, newUid)
 				if err == nil {
 					break
 				}
@@ -132,10 +132,11 @@ func DecrNoteThumbsUp(ctx context.Context, uid string, nid string) {
 		decrThumbsUpLuaScript := redis.NewScript(`
 			local cnt = redis.call('GET', KEYS[1])
 			if cnt and tonumber(cnt) > 0 then
-				if redis.call('DECR', KEYS[1]) == 0 then
+				local newCnt = redis.call('DECR', KEYS[1])
+				if newCnt == 0 then
 					redis.call('DEL', KEYS[1])
 				end
-				return cnt
+				return newCnt
 			end
 			return 0
 		`)
@@ -144,9 +145,9 @@ func DecrNoteThumbsUp(ctx context.Context, uid string, nid string) {
 
 		// 后台协程将减少的数据异步写入DB
 		go func() {
-			err := repository.CancelLikeNote(nid, uint(newUid))
+			err := repository.CancelLikeNote(nid, newUid)
 			for _ = range 3 {
-				err = repository.CancelLikeNote(nid, uint(newUid))
+				err = repository.CancelLikeNote(nid, newUid)
 				if err == nil {
 					break
 				}
@@ -154,10 +155,10 @@ func DecrNoteThumbsUp(ctx context.Context, uid string, nid string) {
 			}
 		}()
 
-		keys := []string{userLikedNote}
+		keys := []string{thumbsUpNid}
 		_, err = decrThumbsUpLuaScript.Run(ctx, global.NoteNormalRdb, keys).Result()
 		if err != nil {
-			log.Println("Failed to increment thumbs up:", err)
+			log.Println("Failed to decrement thumbs up:", err)
 		}
 	}
 }
@@ -194,7 +195,7 @@ func IncrNoteCollection(ctx context.Context, uid string, nid string) {
 	// 如果该值已被清空则从DB重新加载
 	if global.NoteNormalRdb.SCard(ctx, userCollectedNote).Val() == 0 {
 		newUid, _ := strconv.Atoi(uid)
-		ans, _ := repository.LoadCollectedNoteToRdb(uint(newUid))
+		ans, _ := repository.LoadCollectedNoteToRdb(newUid)
 		for _, x := range ans {
 			_, err = global.NoteNormalRdb.SAdd(ctx, userCollectedNote, x.Nid).Result()
 		}
@@ -220,9 +221,9 @@ func IncrNoteCollection(ctx context.Context, uid string, nid string) {
 
 		// 后台协程将增加的数据异步写入DB
 		go func() {
-			err := repository.CollectNote(nid, uint(newUid))
+			err := repository.CollectNote(nid, newUid)
 			for _ = range 3 {
-				err = repository.CollectNote(nid, uint(newUid))
+				err = repository.CollectNote(nid, newUid)
 				if err == nil {
 					break
 				}
@@ -298,9 +299,9 @@ func DecrNoteCollection(ctx context.Context, uid string, nid string) {
 
 		// 后台协程将减少的数据异步写入DB
 		go func() {
-			err := repository.CancelCollectNote(nid, uint(newUid))
+			err := repository.CancelCollectNote(nid, newUid)
 			for _ = range 3 {
-				err = repository.CancelCollectNote(nid, uint(newUid))
+				err = repository.CancelCollectNote(nid, newUid)
 				if err == nil {
 					break
 				}

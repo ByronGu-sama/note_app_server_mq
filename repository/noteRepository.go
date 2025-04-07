@@ -10,7 +10,7 @@ import (
 )
 
 // LikeNote 点赞
-func LikeNote(nid string, uid uint) error {
+func LikeNote(nid string, uid int) error {
 	if err := global.Db.Where("uid = ? and nid = ?", uid, nid).First(&noteModel.LikedNotes{}).Error; err == nil {
 		return errors.New("has liked")
 	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
@@ -46,7 +46,7 @@ func LikeNote(nid string, uid uint) error {
 }
 
 // CancelLikeNote 取消点赞
-func CancelLikeNote(nid string, uid uint) error {
+func CancelLikeNote(nid string, uid int) error {
 	if err := global.Db.Model(&noteModel.LikedNotes{}).Where("uid = ? and nid = ?", uid, nid).First(&noteModel.LikedNotes{}).Error; err != nil {
 		return errors.New("hasn't liked")
 	}
@@ -84,7 +84,7 @@ func CancelLikeNote(nid string, uid uint) error {
 }
 
 // GetNoteLikes 查询点赞数
-func GetNoteLikes(nid string) (uint, error) {
+func GetNoteLikes(nid string) (int, error) {
 	noteInfo := noteModel.NoteInfo{}
 	if err := global.Db.Where("nid = ?", nid).First(&noteInfo).Error; err != nil {
 		return 0, err
@@ -93,7 +93,7 @@ func GetNoteLikes(nid string) (uint, error) {
 }
 
 // GetNoteCollections 查询收藏数
-func GetNoteCollections(nid string) (uint, error) {
+func GetNoteCollections(nid string) (int, error) {
 	noteInfo := noteModel.NoteInfo{}
 	if err := global.Db.Where("nid = ?", nid).First(&noteInfo).Error; err != nil {
 		return 0, err
@@ -102,7 +102,7 @@ func GetNoteCollections(nid string) (uint, error) {
 }
 
 // CollectNote 收藏
-func CollectNote(nid string, uid uint) error {
+func CollectNote(nid string, uid int) error {
 	if err := global.Db.Model(&noteModel.CollectedNotes{}).Where("uid = ? and nid = ?", uid, nid).First(&noteModel.CollectedNotes{}).Error; err == nil {
 		return errors.New("has collected")
 	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
@@ -138,7 +138,7 @@ func CollectNote(nid string, uid uint) error {
 }
 
 // CancelCollectNote 取消收藏
-func CancelCollectNote(nid string, uid uint) error {
+func CancelCollectNote(nid string, uid int) error {
 	if err := global.Db.Model(&noteModel.CollectedNotes{}).Where("uid = ? and nid = ?", uid, nid).First(&noteModel.CollectedNotes{}).Error; err != nil {
 		return errors.New("hasn't liked")
 	}
@@ -178,7 +178,7 @@ func CancelCollectNote(nid string, uid uint) error {
 }
 
 // DeleteNoteWithUid 删除笔记
-func DeleteNoteWithUid(nid string, uid uint) error {
+func DeleteNoteWithUid(nid string, uid int) error {
 	result := global.Db.Where("nid = ? and uid = ?", nid, uid).Delete(&noteModel.Note{})
 	if result.Error != nil {
 		return result.Error
@@ -190,7 +190,7 @@ func DeleteNoteWithUid(nid string, uid uint) error {
 }
 
 // LoadLikedNoteToRdb 将DB内的笔记点赞数据载入redis
-func LoadLikedNoteToRdb(uid uint) ([]noteModel.LikedNotes, error) {
+func LoadLikedNoteToRdb(uid int) ([]noteModel.LikedNotes, error) {
 	var likedNoteList []noteModel.LikedNotes
 	if err := global.Db.Where("uid = ?", uid).Find(&likedNoteList).Error; err != nil {
 		return nil, err
@@ -199,7 +199,7 @@ func LoadLikedNoteToRdb(uid uint) ([]noteModel.LikedNotes, error) {
 }
 
 // LoadCollectedNoteToRdb 将DB内的笔记收藏数据载入redis
-func LoadCollectedNoteToRdb(uid uint) ([]noteModel.CollectedNotes, error) {
+func LoadCollectedNoteToRdb(uid int) ([]noteModel.CollectedNotes, error) {
 	var collectedNoteList []noteModel.CollectedNotes
 	if err := global.Db.Where("uid = ?", uid).Find(&collectedNoteList).Error; err != nil {
 		return nil, err

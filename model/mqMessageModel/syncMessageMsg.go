@@ -8,8 +8,8 @@ import (
 
 type SyncMessageMsg struct {
 	Action    string
-	FirstKey  int
-	SecondKey int
+	FirstKey  int64
+	SecondKey int64
 	Message   *msgModel.Message
 	Timestamp time.Time
 }

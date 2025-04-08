@@ -99,10 +99,18 @@ func likeComment() {
 		switch msg.Action {
 		case action.LikeComment:
 			log.Println(fmt.Sprintf("Fetched New Msg:%v", msg))
-			service.IncrCommentThumbsUp(ctx, uid, cid)
+			go func() {
+				utils.SafeGo(func() {
+					service.IncrCommentThumbsUp(ctx, uid, cid)
+				})
+			}()
 		case action.DislikeComment:
 			log.Println(fmt.Sprintf("Fetched New Msg:%v", msg))
-			service.DecrCommentThumbsUp(ctx, uid, cid)
+			go func() {
+				utils.SafeGo(func() {
+					service.DecrCommentThumbsUp(ctx, uid, cid)
+				})
+			}()
 		}
 	}
 }

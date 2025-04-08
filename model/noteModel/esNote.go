@@ -8,7 +8,7 @@ import (
 
 type Note struct {
 	Nid         string    `json:"nid" gorm:"column:nid"`
-	Uid         int       `json:"uid" gorm:"column:uid"`
+	Uid         int64     `json:"uid" gorm:"column:uid"`
 	Cover       string    `json:"cover" gorm:"column:cover"`
 	CoverHeight float64   `json:"cover_height" gorm:"column:cover_height"`
 	Pics        string    `json:"pics" gorm:"column:pics"`
@@ -28,7 +28,7 @@ func (Note) TableName() string {
 
 type ESNote struct {
 	Nid         string    `json:"nid"`
-	Uid         int       `json:"uid"`
+	Uid         int64     `json:"uid"`
 	Username    string    `json:"username"`
 	AvatarUrl   string    `json:"avatarUrl"`
 	Cover       string    `json:"cover"`
@@ -36,7 +36,7 @@ type ESNote struct {
 	Pics        string    `json:"pics"`
 	Title       string    `json:"title"`
 	Content     string    `json:"content"`
-	LikesCount  int       `json:"likes_count"`
+	LikesCount  int64     `json:"likes_count"`
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`
 	Public      bool      `json:"public"`

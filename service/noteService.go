@@ -2,20 +2,20 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"github.com/redis/go-redis/v9"
 	"log"
 	"note_app_server_mq/global"
 	"note_app_server_mq/repository"
-	"strconv"
 	"time"
 )
 
 // IncrNoteThumbsUp 增加笔记点赞数
-func IncrNoteThumbsUp(ctx context.Context, uid string, nid string) {
+func IncrNoteThumbsUp(ctx context.Context, uid int64, nid string) {
 	// 笔记点赞数
-	thumbsUpNid := nid + ":ThumbsUp"
+	thumbsUpNid := fmt.Sprintf("%d:ThumbsUp", uid)
 	// 点赞过的笔记
-	userLikedNote := uid + ":Liked"
+	userLikedNote := fmt.Sprintf("%d:Liked", uid)
 
 	var err error
 
@@ -40,8 +40,7 @@ func IncrNoteThumbsUp(ctx context.Context, uid string, nid string) {
 
 	// 缓存中没有用户点赞过的笔记列表则从DB加载
 	if global.NoteNormalRdb.SCard(ctx, userLikedNote).Val() == 0 {
-		newUid, _ := strconv.Atoi(uid)
-		ans, _ := repository.LoadLikedNoteToRdb(newUid)
+		ans, _ := repository.LoadLikedNoteToRdb(uid)
 		for _, x := range ans {
 			_, err = global.NoteNormalRdb.SAdd(ctx, userLikedNote, x.Nid).Result()
 		}
@@ -62,13 +61,11 @@ func IncrNoteThumbsUp(ctx context.Context, uid string, nid string) {
 		// 当前用户点赞列表中新增笔记
 		_, err = global.NoteNormalRdb.SAdd(ctx, userLikedNote, nid).Result()
 
-		newUid, _ := strconv.Atoi(uid)
-
 		// 后台协程将新增的数据异步写入DB
 		go func() {
-			err := repository.LikeNote(nid, newUid)
+			err := repository.LikeNote(nid, uid)
 			for _ = range 3 {
-				err = repository.LikeNote(nid, newUid)
+				err = repository.LikeNote(nid, uid)
 				if err == nil {
 					break
 				}
@@ -90,11 +87,12 @@ func IncrNoteThumbsUp(ctx context.Context, uid string, nid string) {
 }
 
 // DecrNoteThumbsUp 减少笔记点赞数
-func DecrNoteThumbsUp(ctx context.Context, uid string, nid string) {
+func DecrNoteThumbsUp(ctx context.Context, uid int64, nid string) {
 	// 笔记点赞数
-	thumbsUpNid := nid + ":ThumbsUp"
+	thumbsUpNid := fmt.Sprintf("%d:ThumbsUp", uid)
 	// 点赞过的笔记
-	userLikedNote := uid + ":Liked"
+	userLikedNote := fmt.Sprintf("%d:Liked", uid)
+
 	var err error
 
 	for i := 0; i < 3; i++ {
@@ -141,13 +139,11 @@ func DecrNoteThumbsUp(ctx context.Context, uid string, nid string) {
 			return 0
 		`)
 
-		newUid, _ := strconv.Atoi(uid)
-
 		// 后台协程将减少的数据异步写入DB
 		go func() {
-			err := repository.CancelLikeNote(nid, newUid)
+			err := repository.CancelLikeNote(nid, uid)
 			for _ = range 3 {
-				err = repository.CancelLikeNote(nid, newUid)
+				err = repository.CancelLikeNote(nid, uid)
 				if err == nil {
 					break
 				}
@@ -164,11 +160,11 @@ func DecrNoteThumbsUp(ctx context.Context, uid string, nid string) {
 }
 
 // IncrNoteCollection 增加笔记收藏数
-func IncrNoteCollection(ctx context.Context, uid string, nid string) {
+func IncrNoteCollection(ctx context.Context, uid int64, nid string) {
 	// 笔记收藏数
-	collectedNid := nid + ":Collection"
+	collectedNid := fmt.Sprintf("%s:Collection", nid)
 	// 收藏过的笔记
-	userCollectedNote := uid + ":Collected"
+	userCollectedNote := fmt.Sprintf("%d:Collected", uid)
 
 	var err error
 
@@ -194,8 +190,7 @@ func IncrNoteCollection(ctx context.Context, uid string, nid string) {
 
 	// 如果该值已被清空则从DB重新加载
 	if global.NoteNormalRdb.SCard(ctx, userCollectedNote).Val() == 0 {
-		newUid, _ := strconv.Atoi(uid)
-		ans, _ := repository.LoadCollectedNoteToRdb(newUid)
+		ans, _ := repository.LoadCollectedNoteToRdb(uid)
 		for _, x := range ans {
 			_, err = global.NoteNormalRdb.SAdd(ctx, userCollectedNote, x.Nid).Result()
 		}
@@ -217,13 +212,11 @@ func IncrNoteCollection(ctx context.Context, uid string, nid string) {
 		// 当前用户点赞列表中增加该笔记
 		_, err = global.NoteNormalRdb.SAdd(ctx, userCollectedNote, nid).Result()
 
-		newUid, _ := strconv.Atoi(uid)
-
 		// 后台协程将增加的数据异步写入DB
 		go func() {
-			err := repository.CollectNote(nid, newUid)
+			err := repository.CollectNote(nid, uid)
 			for _ = range 3 {
-				err = repository.CollectNote(nid, newUid)
+				err = repository.CollectNote(nid, uid)
 				if err == nil {
 					break
 				}
@@ -245,11 +238,11 @@ func IncrNoteCollection(ctx context.Context, uid string, nid string) {
 }
 
 // DecrNoteCollection 减少笔记收藏数
-func DecrNoteCollection(ctx context.Context, uid string, nid string) {
+func DecrNoteCollection(ctx context.Context, uid int64, nid string) {
 	// 笔记收藏数
-	collectedNid := nid + ":Collection"
+	collectedNid := fmt.Sprintf("%s:Collection", nid)
 	// 收藏过的笔记
-	userCollectedNote := uid + ":Collected"
+	userCollectedNote := fmt.Sprintf("%d:Collected", uid)
 
 	var err error
 
@@ -295,13 +288,11 @@ func DecrNoteCollection(ctx context.Context, uid string, nid string) {
 			return 0
 		`)
 
-		newUid, _ := strconv.Atoi(uid)
-
 		// 后台协程将减少的数据异步写入DB
 		go func() {
-			err := repository.CancelCollectNote(nid, newUid)
+			err := repository.CancelCollectNote(nid, uid)
 			for _ = range 3 {
-				err = repository.CancelCollectNote(nid, newUid)
+				err = repository.CancelCollectNote(nid, uid)
 				if err == nil {
 					break
 				}

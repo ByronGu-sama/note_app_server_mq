@@ -8,7 +8,7 @@ import (
 type DelNoteComment struct {
 	Action    string
 	Cid       string
-	Uid       int
+	Uid       int64
 	Timestamp time.Time
 }
 

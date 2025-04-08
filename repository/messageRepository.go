@@ -8,7 +8,7 @@ import (
 )
 
 // SyncMessageToMongo 同步消息
-func SyncMessageToMongo(uid1, uid2 int, message *msgModel.Message) error {
+func SyncMessageToMongo(uid1, uid2 int64, message *msgModel.Message) error {
 	client := global.MongoClient
 	msg := bson.D{
 		{Key: "uid1", Value: uid1},

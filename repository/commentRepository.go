@@ -9,7 +9,7 @@ import (
 )
 
 // DeleteComment 删除评论
-func DeleteComment(uid int, cid string) error {
+func DeleteComment(uid int64, cid string) error {
 	cmt := new(commentModel.Comment)
 	if err := global.Db.Where("cid = ? and uid = ?", cid, uid).First(&cmt).Error; err != nil {
 		return err
@@ -39,7 +39,7 @@ func DeleteComment(uid int, cid string) error {
 }
 
 // LikeComment 点赞评论
-func LikeComment(uid int, cid string) error {
+func LikeComment(uid int64, cid string) error {
 	if err := global.Db.Where("uid = ? and cid = ?", uid, cid).First(&commentModel.LikedComment{}).Error; err == nil {
 		return errors.New("已点赞")
 	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
@@ -67,7 +67,7 @@ func LikeComment(uid int, cid string) error {
 }
 
 // DislikeComment 取消点赞评论
-func DislikeComment(uid int, cid string) error {
+func DislikeComment(uid int64, cid string) error {
 	if err := global.Db.Where("uid = ? and cid = ?", uid, cid).First(&commentModel.LikedComment{}).Error; errors.Is(err, gorm.ErrRecordNotFound) {
 		return errors.New("未点赞")
 	} else if err != nil {
@@ -99,7 +99,7 @@ func DislikeComment(uid int, cid string) error {
 }
 
 // GetCommentLikes 获取评论点赞数
-func GetCommentLikes(cid string) (int, error) {
+func GetCommentLikes(cid string) (int64, error) {
 	comment := &commentModel.CommentsInfo{}
 	if err := global.Db.Model(&commentModel.CommentsInfo{}).Where("cid = ?", cid).First(&comment).Error; err != nil {
 		return 0, err
@@ -108,7 +108,7 @@ func GetCommentLikes(cid string) (int, error) {
 }
 
 // GetUserLikedComment 获取用户点赞过的评论
-func GetUserLikedComment(uid int) ([]commentModel.LikedComment, error) {
+func GetUserLikedComment(uid int64) ([]commentModel.LikedComment, error) {
 	var likedComment []commentModel.LikedComment
 	if err := global.Db.Model(&commentModel.LikedComment{}).Where("uid = ?", uid).Scan(&likedComment).Error; err != nil {
 		return nil, err

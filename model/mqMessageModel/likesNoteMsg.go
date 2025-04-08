@@ -5,6 +5,6 @@ import "time"
 type LikeNotes struct {
 	Action    string
 	Nid       string
-	Uid       int
+	Uid       int64
 	Timestamp time.Time
 }

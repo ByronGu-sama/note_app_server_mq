@@ -9,7 +9,8 @@ import (
 	"note_app_server_mq/config"
 	"note_app_server_mq/config/action"
 	"note_app_server_mq/model/mqMessageModel"
-	"note_app_server_mq/repository"
+	"note_app_server_mq/service"
+	"note_app_server_mq/utils"
 	"sync"
 )
 
@@ -49,13 +50,14 @@ func syncMessage() {
 			log.Fatal("failed to unmarshal message:", err)
 		}
 
-		log.Println(fmt.Sprintf("Fetched New Msg:%v", msg))
-
-		if msg.Action == action.SyncMessage {
-			err = repository.SyncMessageToMongo(msg.FirstKey, msg.SecondKey, msg.Message)
-			if err != nil {
-				log.Println("failed to sync message:", err)
-			}
+		switch msg.Action {
+		case action.SyncMessage:
+			log.Println(fmt.Sprintf("Fetched New Msg:%v", msg))
+			go func() {
+				utils.SafeGo(func() {
+					service.SyncToMongo(msg.FirstKey, msg.SecondKey, msg.Message)
+				})
+			}()
 		}
 	}
 }

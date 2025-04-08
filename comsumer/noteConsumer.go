@@ -13,7 +13,6 @@ import (
 	"note_app_server_mq/repository"
 	"note_app_server_mq/service"
 	"note_app_server_mq/utils"
-	"strconv"
 	"sync"
 	"time"
 )
@@ -71,21 +70,21 @@ func likeNote() {
 
 		switch msg.Action {
 		case action.LikeNote:
-			go func(uid int, nid string) {
+			go func(uid int64, nid string) {
 				utils.SafeGo(func() {
 					ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 					defer cancel()
 					// 更新缓存中的点赞数
-					service.IncrNoteThumbsUp(ctx, strconv.Itoa(uid), nid)
+					service.IncrNoteThumbsUp(ctx, uid, nid)
 				})
 			}(uid, nid)
 		case action.DislikeNote:
-			go func(uid int, nid string) {
+			go func(uid int64, nid string) {
 				utils.SafeGo(func() {
 					ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 					defer cancel()
 					// 处理取消点赞帖子的逻辑
-					service.DecrNoteThumbsUp(ctx, strconv.Itoa(uid), nid)
+					service.DecrNoteThumbsUp(ctx, uid, nid)
 				})
 			}(uid, nid)
 		}
@@ -122,19 +121,19 @@ func collectNote() {
 		uid := msg.Uid
 		nid := msg.Nid
 		if msg.Action == action.CollectNote {
-			go func(uid int, nid string) {
+			go func(uid int64, nid string) {
 				utils.SafeGo(func() {
 					ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 					defer cancel()
-					service.IncrNoteCollection(ctx, strconv.Itoa(uid), nid)
+					service.IncrNoteCollection(ctx, uid, nid)
 				})
 			}(uid, nid)
 		} else if msg.Action == action.AbandonNote {
-			go func(uid int, nid string) {
+			go func(uid int64, nid string) {
 				utils.SafeGo(func() {
 					ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 					defer cancel()
-					service.DecrNoteCollection(ctx, strconv.Itoa(uid), nid)
+					service.DecrNoteCollection(ctx, uid, nid)
 				})
 			}(uid, nid)
 		}
@@ -206,7 +205,7 @@ func delNote() {
 		uid := msg.Uid
 		nid := msg.Nid
 		if msg.Action == action.DelNote {
-			go func(uid int, nid string) {
+			go func(uid int64, nid string) {
 				utils.SafeGo(func() {
 					err = repository.DeleteNoteWithUid(nid, uid)
 					if err != nil {

@@ -2,21 +2,21 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"github.com/redis/go-redis/v9"
 	"log"
 	"note_app_server_mq/global"
 	"note_app_server_mq/repository"
 	"note_app_server_mq/utils"
-	"strconv"
 	"time"
 )
 
 // IncrCommentThumbsUp 增加评论点赞数
-func IncrCommentThumbsUp(ctx context.Context, uid int, cid string) {
+func IncrCommentThumbsUp(ctx context.Context, uid int64, cid string) {
 	// 评论点赞数
-	thumbsUpCid := cid + ":ThumbsUp"
+	thumbsUpCid := fmt.Sprintf("%s:ThumbsUp", cid)
 	// 点赞过的评论
-	userLikedComment := strconv.Itoa(uid) + ":Liked"
+	userLikedComment := fmt.Sprintf("%d:Liked", uid)
 
 	var err error
 
@@ -90,11 +90,11 @@ func IncrCommentThumbsUp(ctx context.Context, uid int, cid string) {
 }
 
 // DecrCommentThumbsUp 减少评论点赞数
-func DecrCommentThumbsUp(ctx context.Context, uid int, cid string) {
+func DecrCommentThumbsUp(ctx context.Context, uid int64, cid string) {
 	// 评论点赞数
 	thumbsUpCid := cid + ":ThumbsUp"
 	// 点赞过的评论
-	userLikedComment := strconv.Itoa(uid) + ":Liked"
+	userLikedComment := fmt.Sprintf("%d:Liked", uid)
 
 	var err error
 

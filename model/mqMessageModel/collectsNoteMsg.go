@@ -3,7 +3,7 @@ package mqMessageModel
 import "time"
 
 type CollectNotes struct {
-	Action    string
+	Action    int
 	Nid       string
 	Uid       int64
 	Timestamp time.Time

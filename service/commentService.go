@@ -7,7 +7,6 @@ import (
 	"log"
 	"note_app_server_mq/global"
 	"note_app_server_mq/repository"
-	"note_app_server_mq/utils"
 	"time"
 )
 
@@ -67,18 +66,13 @@ func IncrCommentThumbsUp(ctx context.Context, uid int64, cid string) {
 			_, err = global.CommentNormalRdb.SAdd(ctx, userLikedComment, cid).Result()
 
 			// 后台协程将新增的数据异步写入DB
-			go func() {
-				utils.SafeGo(func() {
-					e1 := repository.LikeComment(ctx, uid, cid)
-					for _ = range 3 {
-						e1 = repository.LikeComment(ctx, uid, cid)
-						if e1 == nil {
-							break
-						}
-						time.Sleep(500 * time.Millisecond)
-					}
-				})
-			}()
+			for range 3 {
+				err = repository.LikeComment(ctx, uid, cid)
+				if err == nil {
+					break
+				}
+				time.Sleep(200 * time.Millisecond)
+			}
 
 			// 评论点赞数自增
 			_, err = global.CommentNormalRdb.Incr(ctx, thumbsUpCid).Result()
@@ -161,18 +155,13 @@ func DecrCommentThumbsUp(ctx context.Context, uid int64, cid string) {
 		`)
 
 			// 后台协程将新增的数据异步写入DB
-			go func() {
-				utils.SafeGo(func() {
-					e1 := repository.DislikeComment(ctx, uid, cid)
-					for _ = range 3 {
-						e1 = repository.DislikeComment(ctx, uid, cid)
-						if e1 == nil {
-							break
-						}
-						time.Sleep(500 * time.Millisecond)
-					}
-				})
-			}()
+			for range 3 {
+				err = repository.DislikeComment(ctx, uid, cid)
+				if err == nil {
+					break
+				}
+				time.Sleep(200 * time.Millisecond)
+			}
 
 			keys := []string{thumbsUpCid}
 			_, err = decrThumbsUpLuaScript.Run(ctx, global.CommentNormalRdb, keys).Result()

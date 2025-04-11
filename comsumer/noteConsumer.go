@@ -12,7 +12,6 @@ import (
 	"note_app_server_mq/repository"
 	"note_app_server_mq/service"
 	"note_app_server_mq/utils"
-	"strconv"
 	"sync"
 	"time"
 )
@@ -68,24 +67,23 @@ func likeNote() {
 		uid := msg.Uid
 		nid := msg.Nid
 
-		act, _ := strconv.Atoi(msg.Action)
-		switch act {
+		switch msg.Action {
 		case action.LikeNote:
 			go func(uid int64, nid string) {
 				utils.SafeGo(func() {
-					ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-					defer cancel()
+					subCtx, subCancel := context.WithTimeout(ctx, 3*time.Second)
+					defer subCancel()
 					// 更新缓存中的点赞数
-					service.IncrNoteThumbsUp(ctx, uid, nid)
+					service.IncrNoteThumbsUp(subCtx, uid, nid)
 				})
 			}(uid, nid)
 		case action.DislikeNote:
 			go func(uid int64, nid string) {
 				utils.SafeGo(func() {
-					ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-					defer cancel()
+					subCtx, subCancel := context.WithTimeout(ctx, 3*time.Second)
+					defer subCancel()
 					// 处理取消点赞帖子的逻辑
-					service.DecrNoteThumbsUp(ctx, uid, nid)
+					service.DecrNoteThumbsUp(subCtx, uid, nid)
 				})
 			}(uid, nid)
 		default:
@@ -124,22 +122,21 @@ func collectNote() {
 		uid := msg.Uid
 		nid := msg.Nid
 
-		act, _ := strconv.Atoi(msg.Action)
-		switch act {
+		switch msg.Action {
 		case action.CollectNote:
 			go func(uid int64, nid string) {
 				utils.SafeGo(func() {
-					ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-					defer cancel()
-					service.IncrNoteCollection(ctx, uid, nid)
+					subCtx, subCancel := context.WithTimeout(ctx, 3*time.Second)
+					defer subCancel()
+					service.IncrNoteCollection(subCtx, uid, nid)
 				})
 			}(uid, nid)
 		case action.AbandonNote:
 			go func(uid int64, nid string) {
 				utils.SafeGo(func() {
-					ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-					defer cancel()
-					service.DecrNoteCollection(ctx, uid, nid)
+					subCtx, subCancel := context.WithTimeout(ctx, 3*time.Second)
+					defer subCancel()
+					service.DecrNoteCollection(subCtx, uid, nid)
 				})
 			}(uid, nid)
 		default:
@@ -174,14 +171,19 @@ func syncNoteToES() {
 
 		log.Println(fmt.Sprintf("Fetched New Msg:%v", msg))
 
-		act, _ := strconv.Atoi(msg.Action)
-		switch act {
+		switch msg.Action {
 		case action.SyncNote:
-			err = repository.SaveNoteToES(ctx, msg.Note)
-			if err != nil {
-				// 待加入重试机制
-				log.Println("failed to save note:", err)
-			}
+			go func() {
+				utils.SafeGo(func() {
+					subCtx, subCancel := context.WithTimeout(ctx, 5*time.Second)
+					defer subCancel()
+					err = repository.SaveNoteToES(subCtx, msg.Note)
+					if err != nil {
+						// 待加入重试机制
+						log.Println("failed to save note:", err)
+					}
+				})
+			}()
 		default:
 			log.Println("not pre defined case")
 		}
@@ -214,16 +216,15 @@ func delNote() {
 
 		log.Println(fmt.Sprintf("Fetched New Msg:%v", msg))
 
-		act, _ := strconv.Atoi(msg.Action)
-		switch act {
+		switch msg.Action {
 		case action.DelNote:
-			go func() {
-				uid := msg.Uid
-				nid := msg.Nid
+			go func(uid int64, nid string) {
 				utils.SafeGo(func() {
-					service.DelNote(ctx, uid, nid)
+					subCtx, subCancel := context.WithTimeout(ctx, 5*time.Second)
+					defer subCancel()
+					service.DelNote(subCtx, uid, nid)
 				})
-			}()
+			}(msg.Uid, msg.Nid)
 		default:
 			log.Println("not pre defined case")
 		}

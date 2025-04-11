@@ -11,7 +11,6 @@ import (
 	"note_app_server_mq/model/mqMessageModel"
 	"note_app_server_mq/service"
 	"note_app_server_mq/utils"
-	"strconv"
 	"sync"
 )
 
@@ -51,8 +50,7 @@ func syncMessage() {
 			log.Fatal("failed to unmarshal message:", err)
 		}
 
-		act, _ := strconv.Atoi(msg.Action)
-		switch act {
+		switch msg.Action {
 		case action.SyncMessage:
 			log.Println(fmt.Sprintf("Fetched New Msg:%v", msg))
 			go func() {

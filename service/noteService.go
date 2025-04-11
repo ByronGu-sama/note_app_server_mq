@@ -66,17 +66,14 @@ func IncrNoteThumbsUp(ctx context.Context, uid int64, nid string) {
 			// 当前用户点赞列表中新增笔记
 			_, err = global.NoteNormalRdb.SAdd(ctx, userLikedNote, nid).Result()
 
-			// 后台协程将新增的数据异步写入DB
-			go func() {
-				err := repository.LikeNote(ctx, nid, uid)
-				for _ = range 3 {
-					err = repository.LikeNote(ctx, nid, uid)
-					if err == nil {
-						break
-					}
-					time.Sleep(500 * time.Millisecond)
+			// 新增的数据异步写入DB
+			for range 3 {
+				err = repository.LikeNote(ctx, nid, uid)
+				if err == nil {
+					break
 				}
-			}()
+				time.Sleep(200 * time.Millisecond)
+			}
 
 			// 笔记点赞数自增
 			_, err = global.NoteNormalRdb.Incr(ctx, thumbsUpNid).Result()
@@ -110,7 +107,7 @@ func DecrNoteThumbsUp(ctx context.Context, uid int64, nid string) {
 			if err == nil {
 				break
 			}
-			time.Sleep(500 * time.Millisecond)
+			time.Sleep(200 * time.Millisecond)
 		}
 
 		if err != nil {
@@ -147,19 +144,16 @@ func DecrNoteThumbsUp(ctx context.Context, uid int64, nid string) {
 				return newCnt
 			end
 			return 0
-		`)
+			`)
 
 			// 后台协程将减少的数据异步写入DB
-			go func() {
-				err := repository.CancelLikeNote(ctx, nid, uid)
-				for _ = range 3 {
-					err = repository.CancelLikeNote(ctx, nid, uid)
-					if err == nil {
-						break
-					}
-					time.Sleep(500 * time.Millisecond)
+			for range 3 {
+				err = repository.CancelLikeNote(ctx, nid, uid)
+				if err == nil {
+					break
 				}
-			}()
+				time.Sleep(200 * time.Millisecond)
+			}
 
 			keys := []string{thumbsUpNid}
 			_, err = decrThumbsUpLuaScript.Run(ctx, global.NoteNormalRdb, keys).Result()
@@ -227,17 +221,14 @@ func IncrNoteCollection(ctx context.Context, uid int64, nid string) {
 			// 当前用户点赞列表中增加该笔记
 			_, err = global.NoteNormalRdb.SAdd(ctx, userCollectedNote, nid).Result()
 
-			// 后台协程将增加的数据异步写入DB
-			go func() {
-				err := repository.CollectNote(ctx, nid, uid)
-				for _ = range 3 {
-					err = repository.CollectNote(ctx, nid, uid)
-					if err == nil {
-						break
-					}
-					time.Sleep(500 * time.Millisecond)
+			// 增加的数据异步写入DB
+			for range 3 {
+				err = repository.CollectNote(ctx, nid, uid)
+				if err == nil {
+					break
 				}
-			}()
+				time.Sleep(200 * time.Millisecond)
+			}
 
 			// 笔记点赞数自增
 			_, err = global.NoteNormalRdb.Incr(ctx, collectedNid).Result()
@@ -306,19 +297,16 @@ func DecrNoteCollection(ctx context.Context, uid int64, nid string) {
 				return cnt
 			end
 			return 0
-		`)
+			`)
 
-			// 后台协程将减少的数据异步写入DB
-			go func() {
-				err := repository.CancelCollectNote(ctx, nid, uid)
-				for _ = range 3 {
-					err = repository.CancelCollectNote(ctx, nid, uid)
-					if err == nil {
-						break
-					}
-					time.Sleep(500 * time.Millisecond)
+			// 将减少的数据异步写入DB
+			for range 3 {
+				err = repository.CancelCollectNote(ctx, nid, uid)
+				if err == nil {
+					break
 				}
-			}()
+				time.Sleep(200 * time.Millisecond)
+			}
 
 			keys := []string{collectedNid}
 			_, err = decrCollectionsLuaScript.Run(ctx, global.NoteNormalRdb, keys).Result()

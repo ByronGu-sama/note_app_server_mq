@@ -12,8 +12,8 @@ import (
 	"note_app_server_mq/repository"
 	"note_app_server_mq/service"
 	"note_app_server_mq/utils"
-	"strconv"
 	"sync"
+	"time"
 )
 
 func CommentListener() {
@@ -56,14 +56,15 @@ func delComment() {
 
 		uid := msg.Uid
 		cid := msg.Cid
-		act, _ := strconv.Atoi(msg.Action)
 
-		switch act {
+		switch msg.Action {
 		case action.DelNoteComment:
 			log.Println(fmt.Sprintf("Fetched New Msg:%v", msg))
 			go func() {
+				subCtx, subCancel := context.WithTimeout(ctx, time.Second*3)
+				defer subCancel()
 				utils.SafeGo(func() {
-					err = repository.DeleteComment(ctx, uid, cid)
+					err = repository.DeleteComment(subCtx, uid, cid)
 					if err != nil {
 						log.Println("failed to like note:", err)
 					}
@@ -75,7 +76,7 @@ func delComment() {
 	}
 }
 
-// 点赞评论
+// 评论点赞相关功能
 func likeComment() {
 	reader := kafka.NewReader(kafka.ReaderConfig{
 		Brokers:  []string{config.AC.Kafka.Host + ":" + config.AC.Kafka.Port},
@@ -100,20 +101,23 @@ func likeComment() {
 		uid := msg.Uid
 		cid := msg.Cid
 
-		act, _ := strconv.Atoi(msg.Action)
-		switch act {
+		switch msg.Action {
 		case action.LikeComment:
 			log.Println(fmt.Sprintf("Fetched New Msg:%v", msg))
 			go func() {
+				subCtx, subCancel := context.WithTimeout(ctx, 3*time.Second)
+				defer subCancel()
 				utils.SafeGo(func() {
-					service.IncrCommentThumbsUp(ctx, uid, cid)
+					service.IncrCommentThumbsUp(subCtx, uid, cid)
 				})
 			}()
 		case action.DislikeComment:
 			log.Println(fmt.Sprintf("Fetched New Msg:%v", msg))
 			go func() {
+				subCtx, subCancel := context.WithTimeout(ctx, 3*time.Second)
+				defer subCancel()
 				utils.SafeGo(func() {
-					service.DecrCommentThumbsUp(ctx, uid, cid)
+					service.DecrCommentThumbsUp(subCtx, uid, cid)
 				})
 			}()
 		default:

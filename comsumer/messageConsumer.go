@@ -11,6 +11,7 @@ import (
 	"note_app_server_mq/model/mqMessageModel"
 	"note_app_server_mq/service"
 	"note_app_server_mq/utils"
+	"strconv"
 	"sync"
 )
 
@@ -50,14 +51,17 @@ func syncMessage() {
 			log.Fatal("failed to unmarshal message:", err)
 		}
 
-		switch msg.Action {
+		act, _ := strconv.Atoi(msg.Action)
+		switch act {
 		case action.SyncMessage:
 			log.Println(fmt.Sprintf("Fetched New Msg:%v", msg))
 			go func() {
 				utils.SafeGo(func() {
-					service.SyncToMongo(msg.FirstKey, msg.SecondKey, msg.Message)
+					service.SyncToMongo(ctx, msg.FirstKey, msg.SecondKey, msg.Message)
 				})
 			}()
+		default:
+			panic("not pre defined case")
 		}
 	}
 }

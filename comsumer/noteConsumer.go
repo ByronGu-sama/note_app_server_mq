@@ -8,11 +8,11 @@ import (
 	"log"
 	"note_app_server_mq/config"
 	"note_app_server_mq/config/action"
-	"note_app_server_mq/global"
 	"note_app_server_mq/model/mqMessageModel"
 	"note_app_server_mq/repository"
 	"note_app_server_mq/service"
 	"note_app_server_mq/utils"
+	"strconv"
 	"sync"
 	"time"
 )
@@ -68,7 +68,8 @@ func likeNote() {
 		uid := msg.Uid
 		nid := msg.Nid
 
-		switch msg.Action {
+		act, _ := strconv.Atoi(msg.Action)
+		switch act {
 		case action.LikeNote:
 			go func(uid int64, nid string) {
 				utils.SafeGo(func() {
@@ -87,6 +88,8 @@ func likeNote() {
 					service.DecrNoteThumbsUp(ctx, uid, nid)
 				})
 			}(uid, nid)
+		default:
+			log.Println("not pre defined case")
 		}
 	}
 }
@@ -120,7 +123,10 @@ func collectNote() {
 
 		uid := msg.Uid
 		nid := msg.Nid
-		if msg.Action == action.CollectNote {
+
+		act, _ := strconv.Atoi(msg.Action)
+		switch act {
+		case action.CollectNote:
 			go func(uid int64, nid string) {
 				utils.SafeGo(func() {
 					ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
@@ -128,7 +134,7 @@ func collectNote() {
 					service.IncrNoteCollection(ctx, uid, nid)
 				})
 			}(uid, nid)
-		} else if msg.Action == action.AbandonNote {
+		case action.AbandonNote:
 			go func(uid int64, nid string) {
 				utils.SafeGo(func() {
 					ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
@@ -136,6 +142,8 @@ func collectNote() {
 					service.DecrNoteCollection(ctx, uid, nid)
 				})
 			}(uid, nid)
+		default:
+			log.Println("not pre defined case")
 		}
 	}
 }
@@ -166,12 +174,16 @@ func syncNoteToES() {
 
 		log.Println(fmt.Sprintf("Fetched New Msg:%v", msg))
 
-		if msg.Action == action.SyncNote {
-			err = repository.SaveNoteToES(msg.Note)
+		act, _ := strconv.Atoi(msg.Action)
+		switch act {
+		case action.SyncNote:
+			err = repository.SaveNoteToES(ctx, msg.Note)
 			if err != nil {
 				// 待加入重试机制
 				log.Println("failed to save note:", err)
 			}
+		default:
+			log.Println("not pre defined case")
 		}
 	}
 }
@@ -202,33 +214,18 @@ func delNote() {
 
 		log.Println(fmt.Sprintf("Fetched New Msg:%v", msg))
 
-		uid := msg.Uid
-		nid := msg.Nid
-		if msg.Action == action.DelNote {
-			go func(uid int64, nid string) {
+		act, _ := strconv.Atoi(msg.Action)
+		switch act {
+		case action.DelNote:
+			go func() {
+				uid := msg.Uid
+				nid := msg.Nid
 				utils.SafeGo(func() {
-					err = repository.DeleteNoteWithUid(nid, uid)
-					if err != nil {
-						log.Println("failed to collect note:", err)
-					}
+					service.DelNote(ctx, uid, nid)
 				})
-			}(uid, nid)
-			go func(nid string) {
-				utils.SafeGo(func() {
-					_, err = global.ESClient.Delete("notes", nid).Do(ctx)
-					if err != nil {
-						log.Println("failed to delete ES data:", err)
-					}
-				})
-			}(nid)
-			go func(nid string) {
-				utils.SafeGo(func() {
-					err = service.DeleteDir(config.AC.Oss.NotePicsBucket, nid)
-					if err != nil {
-						log.Println("failed to delete dir:", err)
-					}
-				})
-			}(nid)
+			}()
+		default:
+			log.Println("not pre defined case")
 		}
 	}
 }

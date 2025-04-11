@@ -12,6 +12,7 @@ import (
 	"note_app_server_mq/repository"
 	"note_app_server_mq/service"
 	"note_app_server_mq/utils"
+	"strconv"
 	"sync"
 )
 
@@ -55,18 +56,21 @@ func delComment() {
 
 		uid := msg.Uid
 		cid := msg.Cid
+		act, _ := strconv.Atoi(msg.Action)
 
-		switch msg.Action {
+		switch act {
 		case action.DelNoteComment:
 			log.Println(fmt.Sprintf("Fetched New Msg:%v", msg))
 			go func() {
 				utils.SafeGo(func() {
-					err = repository.DeleteComment(uid, cid)
+					err = repository.DeleteComment(ctx, uid, cid)
 					if err != nil {
 						log.Println("failed to like note:", err)
 					}
 				})
 			}()
+		default:
+			log.Println("not pre defined case")
 		}
 	}
 }
@@ -96,7 +100,8 @@ func likeComment() {
 		uid := msg.Uid
 		cid := msg.Cid
 
-		switch msg.Action {
+		act, _ := strconv.Atoi(msg.Action)
+		switch act {
 		case action.LikeComment:
 			log.Println(fmt.Sprintf("Fetched New Msg:%v", msg))
 			go func() {
@@ -111,6 +116,8 @@ func likeComment() {
 					service.DecrCommentThumbsUp(ctx, uid, cid)
 				})
 			}()
+		default:
+			log.Println("not pre defined case")
 		}
 	}
 }

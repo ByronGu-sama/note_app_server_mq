@@ -10,19 +10,19 @@ import (
 )
 
 // LikeNote 点赞
-func LikeNote(nid string, uid int64) error {
-	if err := global.Db.Where("uid = ? and nid = ?", uid, nid).First(&noteModel.LikedNotes{}).Error; err == nil {
+func LikeNote(ctx context.Context, nid string, uid int64) error {
+	if err := global.Db.WithContext(ctx).Where("uid = ? and nid = ?", uid, nid).First(&noteModel.LikedNotes{}).Error; err == nil {
 		return errors.New("has liked")
 	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
 		return err
 	}
 
-	tx := global.Db.Begin()
-	if err := tx.Create(&noteModel.LikedNotes{Uid: uid, Nid: nid}).Error; err != nil {
+	tx := global.Db.WithContext(ctx).Begin()
+	if err := tx.WithContext(ctx).Create(&noteModel.LikedNotes{Uid: uid, Nid: nid}).Error; err != nil {
 		tx.Rollback()
 		return err
 	}
-	result := tx.Model(&noteModel.NoteInfo{}).Where("nid = ?", nid).UpdateColumn("likes_count", gorm.Expr("likes_count + ?", 1))
+	result := tx.WithContext(ctx).Model(&noteModel.NoteInfo{}).Where("nid = ?", nid).UpdateColumn("likes_count", gorm.Expr("likes_count + ?", 1))
 	if result.Error != nil {
 		tx.Rollback()
 		return result.Error
@@ -32,7 +32,7 @@ func LikeNote(nid string, uid int64) error {
 		return errors.New("更新数据失败")
 	}
 
-	result = tx.Model(&userModel.UserCreationInfo{}).Where("uid = ?", uid).UpdateColumn("likes", gorm.Expr("likes + ?", 1))
+	result = tx.WithContext(ctx).Model(&userModel.UserCreationInfo{}).Where("uid = ?", uid).UpdateColumn("likes", gorm.Expr("likes + ?", 1))
 	if result.Error != nil {
 		tx.Rollback()
 		return result.Error
@@ -41,17 +41,17 @@ func LikeNote(nid string, uid int64) error {
 		tx.Rollback()
 		return errors.New("更新数据失败")
 	}
-	tx.Commit()
+	tx.WithContext(ctx).Commit()
 	return nil
 }
 
 // CancelLikeNote 取消点赞
-func CancelLikeNote(nid string, uid int64) error {
-	if err := global.Db.Model(&noteModel.LikedNotes{}).Where("uid = ? and nid = ?", uid, nid).First(&noteModel.LikedNotes{}).Error; err != nil {
+func CancelLikeNote(ctx context.Context, nid string, uid int64) error {
+	if err := global.Db.WithContext(ctx).Model(&noteModel.LikedNotes{}).Where("uid = ? and nid = ?", uid, nid).First(&noteModel.LikedNotes{}).Error; err != nil {
 		return errors.New("hasn't liked")
 	}
-	tx := global.Db.Begin()
-	result := tx.Model(&noteModel.LikedNotes{}).Where("uid = ? and nid = ?", uid, nid).Delete(&noteModel.LikedNotes{})
+	tx := global.Db.WithContext(ctx).Begin()
+	result := tx.WithContext(ctx).Model(&noteModel.LikedNotes{}).Where("uid = ? and nid = ?", uid, nid).Delete(&noteModel.LikedNotes{})
 	if result.Error != nil {
 		tx.Rollback()
 		return result.Error
@@ -60,7 +60,7 @@ func CancelLikeNote(nid string, uid int64) error {
 		tx.Rollback()
 		return errors.New("取消点赞失败")
 	}
-	result = tx.Model(&noteModel.NoteInfo{}).Where("nid = ?", nid).UpdateColumn("likes_count", gorm.Expr("likes_count - ?", 1))
+	result = tx.WithContext(ctx).Model(&noteModel.NoteInfo{}).Where("nid = ?", nid).UpdateColumn("likes_count", gorm.Expr("likes_count - ?", 1))
 	if result.Error != nil {
 		tx.Rollback()
 		return result.Error
@@ -70,7 +70,7 @@ func CancelLikeNote(nid string, uid int64) error {
 		return errors.New("更新数据失败")
 	}
 
-	result = tx.Model(&userModel.UserCreationInfo{}).Where("uid = ?", uid).UpdateColumn("likes", gorm.Expr("likes - ?", 1))
+	result = tx.WithContext(ctx).Model(&userModel.UserCreationInfo{}).Where("uid = ?", uid).UpdateColumn("likes", gorm.Expr("likes - ?", 1))
 	if result.Error != nil {
 		tx.Rollback()
 		return result.Error
@@ -79,42 +79,42 @@ func CancelLikeNote(nid string, uid int64) error {
 		tx.Rollback()
 		return errors.New("更新数据失败")
 	}
-	tx.Commit()
+	tx.WithContext(ctx).Commit()
 	return nil
 }
 
 // GetNoteLikes 查询点赞数
-func GetNoteLikes(nid string) (int64, error) {
+func GetNoteLikes(ctx context.Context, nid string) (int64, error) {
 	noteInfo := noteModel.NoteInfo{}
-	if err := global.Db.Where("nid = ?", nid).First(&noteInfo).Error; err != nil {
+	if err := global.Db.WithContext(ctx).Where("nid = ?", nid).First(&noteInfo).Error; err != nil {
 		return 0, err
 	}
 	return noteInfo.LikesCount, nil
 }
 
 // GetNoteCollections 查询收藏数
-func GetNoteCollections(nid string) (int64, error) {
+func GetNoteCollections(ctx context.Context, nid string) (int64, error) {
 	noteInfo := noteModel.NoteInfo{}
-	if err := global.Db.Where("nid = ?", nid).First(&noteInfo).Error; err != nil {
+	if err := global.Db.WithContext(ctx).Where("nid = ?", nid).First(&noteInfo).Error; err != nil {
 		return 0, err
 	}
 	return noteInfo.CollectionsCount, nil
 }
 
 // CollectNote 收藏
-func CollectNote(nid string, uid int64) error {
-	if err := global.Db.Model(&noteModel.CollectedNotes{}).Where("uid = ? and nid = ?", uid, nid).First(&noteModel.CollectedNotes{}).Error; err == nil {
+func CollectNote(ctx context.Context, nid string, uid int64) error {
+	if err := global.Db.WithContext(ctx).Model(&noteModel.CollectedNotes{}).Where("uid = ? and nid = ?", uid, nid).First(&noteModel.CollectedNotes{}).Error; err == nil {
 		return errors.New("has collected")
 	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
 		return err
 	}
 
-	tx := global.Db.Begin()
-	if err := tx.Create(&noteModel.CollectedNotes{Uid: uid, Nid: nid}).Error; err != nil {
+	tx := global.Db.WithContext(ctx).Begin()
+	if err := tx.WithContext(ctx).Create(&noteModel.CollectedNotes{Uid: uid, Nid: nid}).Error; err != nil {
 		tx.Rollback()
 		return err
 	}
-	result := tx.Model(&noteModel.NoteInfo{}).Where("nid = ?", nid).UpdateColumn("collections_count", gorm.Expr("collections_count + ?", 1))
+	result := tx.WithContext(ctx).Model(&noteModel.NoteInfo{}).Where("nid = ?", nid).UpdateColumn("collections_count", gorm.Expr("collections_count + ?", 1))
 	if result.Error != nil {
 		tx.Rollback()
 		return result.Error
@@ -124,7 +124,7 @@ func CollectNote(nid string, uid int64) error {
 		return errors.New("更新数据失败")
 	}
 
-	result = tx.Model(&userModel.UserCreationInfo{}).Where("uid = ?", uid).UpdateColumn("collects", gorm.Expr("collects + ?", 1))
+	result = tx.WithContext(ctx).Model(&userModel.UserCreationInfo{}).Where("uid = ?", uid).UpdateColumn("collects", gorm.Expr("collects + ?", 1))
 	if result.Error != nil {
 		tx.Rollback()
 		return result.Error
@@ -133,17 +133,17 @@ func CollectNote(nid string, uid int64) error {
 		tx.Rollback()
 		return errors.New("更新数据失败")
 	}
-	tx.Commit()
+	tx.WithContext(ctx).Commit()
 	return nil
 }
 
 // CancelCollectNote 取消收藏
-func CancelCollectNote(nid string, uid int64) error {
-	if err := global.Db.Model(&noteModel.CollectedNotes{}).Where("uid = ? and nid = ?", uid, nid).First(&noteModel.CollectedNotes{}).Error; err != nil {
+func CancelCollectNote(ctx context.Context, nid string, uid int64) error {
+	if err := global.Db.WithContext(ctx).Model(&noteModel.CollectedNotes{}).Where("uid = ? and nid = ?", uid, nid).First(&noteModel.CollectedNotes{}).Error; err != nil {
 		return errors.New("hasn't liked")
 	}
-	tx := global.Db.Begin()
-	result := tx.Model(&noteModel.CollectedNotes{}).Where("uid = ? and nid = ?", uid, nid).Delete(&noteModel.CollectedNotes{})
+	tx := global.Db.WithContext(ctx).Begin()
+	result := tx.WithContext(ctx).Model(&noteModel.CollectedNotes{}).Where("uid = ? and nid = ?", uid, nid).Delete(&noteModel.CollectedNotes{})
 	if result.Error != nil {
 		tx.Rollback()
 		return result.Error
@@ -153,7 +153,7 @@ func CancelCollectNote(nid string, uid int64) error {
 		return errors.New("cancel collect failed")
 	}
 
-	result = tx.Model(&noteModel.NoteInfo{}).Where("nid = ?", nid).UpdateColumn("collections_count", gorm.Expr("collections_count - ?", 1))
+	result = tx.WithContext(ctx).Model(&noteModel.NoteInfo{}).Where("nid = ?", nid).UpdateColumn("collections_count", gorm.Expr("collections_count - ?", 1))
 	if result.Error != nil {
 		tx.Rollback()
 		return result.Error
@@ -163,7 +163,7 @@ func CancelCollectNote(nid string, uid int64) error {
 		return errors.New("更新数据失败")
 	}
 
-	result = tx.Model(&userModel.UserCreationInfo{}).Where("uid = ?", uid).UpdateColumn("collects", gorm.Expr("collects - ?", 1))
+	result = tx.WithContext(ctx).Model(&userModel.UserCreationInfo{}).Where("uid = ?", uid).UpdateColumn("collects", gorm.Expr("collects - ?", 1))
 	if result.Error != nil {
 		tx.Rollback()
 		return result.Error
@@ -178,8 +178,8 @@ func CancelCollectNote(nid string, uid int64) error {
 }
 
 // DeleteNoteWithUid 删除笔记
-func DeleteNoteWithUid(nid string, uid int64) error {
-	result := global.Db.Where("nid = ? and uid = ?", nid, uid).Delete(&noteModel.Note{})
+func DeleteNoteWithUid(ctx context.Context, nid string, uid int64) error {
+	result := global.Db.WithContext(ctx).Where("nid = ? and uid = ?", nid, uid).Delete(&noteModel.Note{})
 	if result.Error != nil {
 		return result.Error
 	}
@@ -190,28 +190,33 @@ func DeleteNoteWithUid(nid string, uid int64) error {
 }
 
 // LoadLikedNoteToRdb 将DB内的笔记点赞数据载入redis
-func LoadLikedNoteToRdb(uid int64) ([]noteModel.LikedNotes, error) {
+func LoadLikedNoteToRdb(ctx context.Context, uid int64) ([]noteModel.LikedNotes, error) {
 	var likedNoteList []noteModel.LikedNotes
-	if err := global.Db.Where("uid = ?", uid).Find(&likedNoteList).Error; err != nil {
+	if err := global.Db.WithContext(ctx).Where("uid = ?", uid).Find(&likedNoteList).Error; err != nil {
 		return nil, err
 	}
 	return likedNoteList, nil
 }
 
 // LoadCollectedNoteToRdb 将DB内的笔记收藏数据载入redis
-func LoadCollectedNoteToRdb(uid int64) ([]noteModel.CollectedNotes, error) {
+func LoadCollectedNoteToRdb(ctx context.Context, uid int64) ([]noteModel.CollectedNotes, error) {
 	var collectedNoteList []noteModel.CollectedNotes
-	if err := global.Db.Where("uid = ?", uid).Find(&collectedNoteList).Error; err != nil {
+	if err := global.Db.WithContext(ctx).Where("uid = ?", uid).Find(&collectedNoteList).Error; err != nil {
 		return nil, err
 	}
 	return collectedNoteList, nil
 }
 
 // SaveNoteToES 转存笔记
-func SaveNoteToES(note *noteModel.ESNote) error {
-	_, err := global.ESClient.Create("notes", note.Nid).Request(note).Do(context.TODO())
-	if err != nil {
-		return err
+func SaveNoteToES(ctx context.Context, note *noteModel.ESNote) error {
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	default:
+		_, err := global.ESClient.Create("notes", note.Nid).Request(note).Do(context.TODO())
+		if err != nil {
+			return err
+		}
+		return nil
 	}
-	return nil
 }
